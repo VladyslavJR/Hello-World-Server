@@ -9,12 +9,15 @@ class MainPage(webapp2.RequestHandler):
         self.response.out.write("""
                   <html>
                     <body>
-                      <form action="/sign" method="post">
+                      <form action="add_post" method="post">
                         <div><textarea name="content" rows="3" cols="60"></textarea></div>
                         <div><input type="submit" value="Sign Guestbook"></div>
                       </form>
                     </body>
                   </html>""")
+
+    def add_post(self):
+        self.response.out.write('<html><body>Hello</body></html>')
 
 
 class GuestBook(webapp2.RequestHandler):
