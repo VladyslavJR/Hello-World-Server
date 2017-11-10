@@ -7,7 +7,7 @@ import sys
 import select
 
 
-HOST = ''
+HOST = 'https://8080-dot-3176823-dot-devshell.appspot.com'
 SOCKET_LIST = []
 RECV_BUFFER = 4096
 PORT = 9009
