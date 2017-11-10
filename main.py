@@ -1,45 +1,71 @@
-import cgi
+# import cgi
 
-from google.appengine.api import users
-import webapp2
-
-
-class MainPage(webapp2.RequestHandler):
-    def get(self):
-        self.response.out.write("""
-                  <html>
-                    <body>
-                      <form method="post">
-                        <div><textarea name="content" rows="3" cols="60"></textarea></div>
-                        <div><input type="submit" value="Sign Guestbook"></div>
-                      </form>
-                    </body>
-                  </html>""")
-
-    def post(self):
-        self.response.out.write(cgi.escape(self.request.get('content')))
-
-    def add_post(self):
-        self.response.out.write('<html><body>Hello</body></html>')
+# from google.appengine.api import users
+# import webapp2
+import socket
+import sys
+import select
 
 
-class GuestBook(webapp2.RequestHandler):
-    def post(self):
-        self.response.out.write('<html><body>You wrote:<pre>')
-        self.response.out.write(cgi.escape(self.request.get('content')))
-        self.response.out.write('</pre></body></html>')
+HOST = ''
+SOCKET_LIST = []
+RECV_BUFFER = 4096
+PORT = 9009
 
 
-app = webapp2.WSGIApplication([
-    ('/', MainPage),
-    ('/sign', GuestBook),
-], debug=True)
+def chat_server():
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind((HOST, PORT))
+    server_socket.listen(10)
+
+    SOCKET_LIST.append(server_socket)
+
+    print "Chat server started on port " + str(PORT)
+
+    while 1:
+
+        ready_to_read,ready_to_write,in_error = select.select(SOCKET_LIST, [], [], 0)
+
+        for sock in ready_to_read:
+
+            if sock == server_socket:
+                sockfid, addr = server_socket.accept()
+                SOCKET_LIST.append(sockfid)
+                print " Client (%s, %s) connected" % addr
+
+                broadcast(server_socket, sock, "[%s:%s] entered our chatting room\n" % addr)
+
+            else:
+                try:
+                    data = sock.recv(RECV_BUFFER)
+                    if data:
+                        broadcast(server_socket, sock, "\r" + '[' + str(sock.getpeername()) + '] ' + data)
+                    else:
+                        if sock in SOCKET_LIST:
+                            SOCKET_LIST.remove(sock)
+
+                        broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr)
+
+                except:
+                    broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr)
+                    continue
+
+    server_socket.close()
 
 
-def main():
-    from paste import httpserver
-    httpserver.serve(app, host='127.0.0.1', port='8000')
+def broadcast(server_socket, sock, message):
+    for socket in SOCKET_LIST:
+        if socket != server_socket:
+            try:
+                socket.send(message)
+            except:
+                socket.close()
+                if socket in SOCKET_LIST:
+                    SOCKET_LIST.remove(socket)
 
 
 if __name__ == '__main__':
-    main()
+    #main()
+    sys.exit(chat_server())
