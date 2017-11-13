@@ -1,74 +1,42 @@
-# import cgi
-
-# from google.appengine.api import users
-# import webapp2
-import socket
-import sys
-import select
+import webapp2
+import subprocess
+import argparse
+import handlers
 
 
-HOST = 'https://8080-dot-3176823-dot-devshell.appspot.com'
-SOCKET_LIST = []
-RECV_BUFFER = 4096
-PORT = 9009
+server_running = False
 
 
-def chat_server():
+parser = argparse.ArgumentParser()
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((HOST, PORT))
-    server_socket.listen(10)
+parser.add_argument('-hn', '--hostname', dest='HOST', default="localhost", help="Host", type=str)
+parser.add_argument('-cp', '--chat_port', dest='CHAT_PORT', default=9009, help="Chat port", type=int)
+parser.add_argument('-sp', '--site_port', dest='SITE_PORT', default=9010, help="Site port", type=int)
+parser.add_argument('-rb', '--receive_buffer', dest="RECV_BUFFER", default=4096,
+                    help="Receive buffer size", type=int)
 
-    SOCKET_LIST.append(server_socket)
-
-    print "Chat server started on port " + str(PORT)
-
-    while 1:
-
-        ready_to_read,ready_to_write,in_error = select.select(SOCKET_LIST, [], [], 0)
-
-        for sock in ready_to_read:
-
-            if sock == server_socket:
-                sockfid, addr = server_socket.accept()
-                SOCKET_LIST.append(sockfid)
-                print " Client (%s, %s) connected" % addr
-
-                broadcast(server_socket, sock, "[%s:%s] entered our chatting room\n" % addr)
-
-            else:
-                try:
-                    data = sock.recv(RECV_BUFFER)
-                    if data:
-                        broadcast(server_socket, sock, "\r" + '[' + str(sock.getpeername()) + '] ' + data)
-                    else:
-                        if sock in SOCKET_LIST:
-                            SOCKET_LIST.remove(sock)
-
-                        broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr)
-
-                except:
-                    broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr)
-                    continue
-
-    server_socket.close()
+args = parser.parse_args()
 
 
-def broadcast(server_socket, sock, message):
-    for socket in SOCKET_LIST:
-        if socket != server_socket:
-            try:
-                socket.send(message)
-            except:
-                socket.close()
-                if socket in SOCKET_LIST:
-                    SOCKET_LIST.remove(socket)
+config = {
+        'HOST': args.HOST,
+        'PORT': args.CHAT_PORT,
+    }
 
 
-app = chat_server()
+app = webapp2.WSGIApplication([
+        ('/', handlers.MainPage),
+    ], debug=True, config=config)
+
+
+def main():
+    subprocess.Popen("python chat_server.py -hn " + str(args.HOST) + " -p " + str(args.CHAT_PORT) +
+                     " -rb " + str(args.RECV_BUFFER))
+
+    from paste import httpserver
+
+    httpserver.serve(app, host=args.HOST, port=args.SITE_PORT)
 
 
 if __name__ == '__main__':
-    #main()
-    sys.exit(chat_server())
+    main()
