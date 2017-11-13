@@ -7,14 +7,14 @@ import argparse
 SOCKET_LIST = []
 userNamePattern = re.compile(r'\[(?P<userName>[ a-zA-Z0-9]+)\](?P<msg>[ a-zA-Z0-9]+)')
 
-parser = argparse.ArgumentParser()
+parser_server = argparse.ArgumentParser(description="This is a description for the server")
 
-parser.add_argument('-hn', '--hostname', dest='HOST', default="localhost", help="Host", type=str)
-parser.add_argument('-p', '--port', dest='PORT', default=9011, help="Port", type=int)
-parser.add_argument('-rb', '--receive_buffer', dest="RECV_BUFFER", default=4096,
-                    help="Receive buffer size", type=int)
+parser_server.add_argument('-hn', '--hostname', dest='HOST', default="localhost", help="Host", type=str)
+parser_server.add_argument('-cp', '--port', dest='PORT', default=9011, help="Port", type=int)
+parser_server.add_argument('-rb', '--receive_buffer', dest="RECV_BUFFER", default=4096,
+                           help="Receive buffer size", type=int)
 
-args = parser.parse_args()
+args = parser_server.parse_args()
 
 
 def chat_server():
