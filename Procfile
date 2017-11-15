@@ -1,1 +1,1 @@
-web: main.py -cp 9009
+web: python main.py -p $PORT
