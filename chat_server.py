@@ -5,16 +5,10 @@ import re
 import argparse
 
 SOCKET_LIST = []
+HOST = ''
+PORT = 9009
+RECV_BUFFER = 4096
 userNamePattern = re.compile(r'\[(?P<userName>[ a-zA-Z0-9]+)\](?P<msg>[ a-zA-Z0-9]+)')
-
-parser_server = argparse.ArgumentParser(description="This is a description for the server")
-
-parser_server.add_argument('-hn', '--hostname', dest='HOST', default="localhost", help="Host", type=str)
-parser_server.add_argument('-p', '--port', dest='PORT', default=9009, help="Port", type=int)
-parser_server.add_argument('-rb', '--receive_buffer', dest="RECV_BUFFER", default=4096,
-                           help="Receive buffer size", type=int)
-
-args = parser_server.parse_args()
 
 
 def chat_server():
@@ -23,7 +17,7 @@ def chat_server():
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((args.HOST, args.PORT))
+    server_socket.bind((HOST, PORT))
     server_socket.listen(10)
 
     SOCKET_LIST.append(server_socket)
@@ -50,7 +44,7 @@ def chat_server():
 
             else:
                 try:
-                    data = sock.recv(args.RECV_BUFFER)
+                    data = sock.recv(RECV_BUFFER)
                     if data:
                         if data[0] == 'p':
                             print "Ping from [" + str(sock.getpeername()) + "]"
@@ -105,9 +99,6 @@ def broadcast_to_client(server_socket, sock, message):
                 SOCKET_LIST.remove(sock)
 
 
-def start_server():
+def start_server(port=9009):
+    PORT = port
     sys.exit(chat_server())
-
-
-if __name__ == "__main__":
-    start_server()

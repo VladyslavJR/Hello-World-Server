@@ -2,6 +2,7 @@ import webapp2
 import subprocess
 import argparse
 import handlers
+import chat_server
 
 parser = argparse.ArgumentParser()
 
@@ -23,13 +24,19 @@ app = webapp2.WSGIApplication([
 
 
 def main():
-    subprocess.Popen('python ./chat_server.py -hn ' + str(args.HOST) + ' -p ' + str(args.PORT) +
-                     ' -rb ' + str(args.RECV_BUFFER))
+    subprocess.Popen('python main.py -hn s -p ' + str(args.PORT) + ' -rb ' + str(args.RECV_BUFFER))
 
     from paste import httpserver
 
     httpserver.serve(app, host=args.HOST, port=(args.PORT + 1))
 
 
+def run_server():
+    chat_server.start_server()
+
+
 if __name__ == '__main__':
-    main()
+    if args.HOST == "s":
+        chat_server.start_server(port=args.PORT)
+    else:
+        main()
