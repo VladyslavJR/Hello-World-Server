@@ -26,7 +26,7 @@ app = webapp2.WSGIApplication([
 
 
 def main():
-    subprocess.Popen("python chat_server.py -hn " + str(args.HOST) + " -p " + str(args.PORT) +
+    subprocess.Popen("python ./chat_server.py -hn " + str(args.HOST) + " -p " + str(args.PORT) +
                      " -rb " + str(args.RECV_BUFFER))
 
     from paste import httpserver
