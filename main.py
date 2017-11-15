@@ -25,8 +25,8 @@ config = {
 
 
 app = webapp2.WSGIApplication([
-        ('/', handlers.MainPage),
-    ], debug=True, config=config)
+         ('/', handlers.MainPage),
+     ], debug=True, config=config)
 
 
 def main():
