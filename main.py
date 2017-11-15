@@ -3,7 +3,6 @@ import subprocess
 import argparse
 import handlers
 
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-hn', '--hostname', dest='HOST', default="localhost", help="Host", type=str)
@@ -13,21 +12,19 @@ parser.add_argument('-rb', '--receive_buffer', dest="RECV_BUFFER", default=4096,
 
 args = parser.parse_args()
 
-
 config = {
-        'HOST': args.HOST,
-        'PORT': args.PORT,
-    }
-
+    'HOST': args.HOST,
+    'PORT': args.PORT,
+}
 
 app = webapp2.WSGIApplication([
-         ('/', handlers.MainPage),
-     ], debug=True, config=config)
+    ('/', handlers.MainPage),
+], debug=True, config=config)
 
 
 def main():
-    subprocess.Popen("python ./chat_server.py -hn " + str(args.HOST) + " -p " + str(args.PORT) +
-                     " -rb " + str(args.RECV_BUFFER))
+    subprocess.Popen('python ./chat_server.py -hn ' + str(args.HOST) + ' -p ' + str(args.PORT) +
+                     ' -rb ' + str(args.RECV_BUFFER))
 
     from paste import httpserver
 
