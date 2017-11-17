@@ -1,1 +1,1 @@
-web: python main.py -p $PORT
+web: python chat_server.py -p $PORT
