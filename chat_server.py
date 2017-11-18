@@ -2,13 +2,12 @@ import socket
 import sys
 import select
 import re
-import asyncore
 import argparse
 
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-hn', '--hostname', dest='HOST', default="localhost", help="Host", type=str)
+parser.add_argument('-hn', '--hostname', dest='HOST', default="0.0.0.0", help="Host", type=str)
 parser.add_argument('-p', '--port', dest='PORT', default=9009, help="Server's port", type=int)
 parser.add_argument('-rb', '--receive_buffer', dest="RECV_BUFFER", default=4096,
                     help="Receive buffer size", type=int)
