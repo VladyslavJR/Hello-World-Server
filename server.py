@@ -1,4 +1,5 @@
 import sys
+import argparse
 from twisted.web.static import File
 from twisted.python import log
 from twisted.internet import reactor
@@ -8,6 +9,13 @@ from autobahn.twisted.websocket import WebSocketServerFactory, \
     WebSocketServerProtocol
 
 from autobahn.twisted.resource import WebSocketResource
+
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-p', '--port', dest="PORT", default=8080, type=int)
+
+args = parser.parse_args()
 
 
 class ServerProtocol(WebSocketServerProtocol):
@@ -78,5 +86,5 @@ if __name__=="__main__":
     root.putChild(u"ws", resource)
 
     site = Site(root)
-    reactor.listenTCP(8080, site)
+    reactor.listenTCP(args.PORT, site)
     reactor.run()
