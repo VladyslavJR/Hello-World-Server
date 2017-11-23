@@ -70,9 +70,11 @@ class ChatFactory(WebSocketServerFactory):
                 msg = str(payload)
                 msg = msg[2:msg.__len__() - 2]
                 msg = '[' + self.users[c.peer]["user_name"] + '] ' + msg
-                self.users[c.peer]["object"].sendMessage(msg)
                 self.messages.append(msg)
                 break
+        for c in self.clients:
+            if self.users[c.peer]["object"] is client:
+                self.users[c.peer]["object"].sendMessage(msg)
 
 
 if __name__=="__main__":
