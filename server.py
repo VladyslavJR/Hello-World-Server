@@ -73,7 +73,7 @@ class ChatFactory(WebSocketServerFactory):
                 self.messages.append(msg)
                 break
         for c in self.clients:
-            if self.users[c.peer]["object"] is client:
+            if self.users[c.peer]:
                 self.users[c.peer]["object"].sendMessage(msg)
 
 
