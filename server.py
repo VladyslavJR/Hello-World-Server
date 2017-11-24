@@ -35,6 +35,9 @@ class ServerProtocol(WebSocketServerProtocol):
         else:
             self.factory.broadcast_to_all(self, payload)
 
+    def onFrameData(self, payload):
+        print("Data: " + str(payload))
+
 
 class ChatFactory(WebSocketServerFactory):
     def __init__(self, *args, **kwargs):
@@ -66,12 +69,13 @@ class ChatFactory(WebSocketServerFactory):
 
     def broadcast_to_all(self, client, payload):
         for c in self.clients:
-            if self.users[c.peer]["object"] is client:
-                msg = str(payload)
-                msg = msg[2:msg.__len__() - 2]
-                msg = '[' + self.users[c.peer]["user_name"] + '] ' + msg
-                self.messages.append(msg)
-                break
+            if self.users[c.peer]:
+                if self.users[c.peer]["object"] is client:
+                    msg = str(payload)
+                    msg = msg[2:msg.__len__() - 2]
+                    msg = '[' + self.users[c.peer]["user_name"] + '] ' + msg
+                    self.messages.append(msg)
+                    break
         for c in self.clients:
             if self.users[c.peer]:
                 self.users[c.peer]["object"].sendMessage(msg)
