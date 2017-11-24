@@ -32,12 +32,12 @@ class ServerProtocol(WebSocketServerProtocol):
 
     def onFrameData(self, payload):
         print("Data: [" + str(payload.__len__()) + "] " + str(payload))
-        if payload.__len__() > 0:
-            if payload[0].__len__() > 0:
-                if payload[0][0] == '\n'[0]:
-                    self.factory.authenticate(self, payload[0])
+        for data in payload:
+            if data.__len__() > 0:
+                if data[0] == '\n'[0]:
+                    self.factory.authenticate(self, data)
                 else:
-                    self.factory.broadcast_to_all(self, payload)
+                    self.factory.broadcast_to_all(self, data)
 
 
 class ChatFactory(WebSocketServerFactory):
