@@ -14,6 +14,7 @@ from autobahn.twisted.resource import WebSocketResource
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-p', '--port', dest="PORT", default=8080, type=int)
+parser.add_argument('-l', '--local', dest="local", default=False, type=bool)
 
 args = parser.parse_args()
 
@@ -55,9 +56,10 @@ class ChatFactory(WebSocketServerFactory):
         print("User " + user_name + " has authenticated.")
 
     def unregister(self, client):
-        if self.users[client.peer]:
+        if client.peer in self.users:
             self.log_out(client)
-        self.clients.remove(client)
+        if client in self.clients:
+            self.clients.remove(client)
 
     def log_out(self, client):
         print("User " + self.users[client.peer]["user_name"] + " has loged out.")
@@ -69,7 +71,7 @@ class ChatFactory(WebSocketServerFactory):
 
     def broadcast_to_all(self, client, payload):
         for c in self.clients:
-            if self.users[c.peer]:
+            if c.peer in self.users:
                 if self.users[c.peer]["object"] is client:
                     msg = str(payload)
                     msg = msg[2:msg.__len__() - 2]
@@ -77,16 +79,19 @@ class ChatFactory(WebSocketServerFactory):
                     self.messages.append(msg)
                     break
         for c in self.clients:
-            if self.users[c.peer]:
+            if c.peer in self.users:
                 self.users[c.peer]["object"].sendMessage(msg)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     log.startLogging(sys.stdout)
 
     root = File(".")
 
-    factory = ChatFactory(u"ws://sleepy-river-62121.herokuapp.com/")
+    if not args.local:
+        factory = ChatFactory(u"ws://sleepy-river-62121.herokuapp.com/")
+    else:
+        factory = ChatFactory(u"ws://127.0.0.1:8080/")
     factory.protocol = ServerProtocol
     resource = WebSocketResource(factory)
     root.putChild(u"ws", resource)
