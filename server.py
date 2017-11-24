@@ -31,10 +31,11 @@ class ServerProtocol(WebSocketServerProtocol):
         print("Some request connected {}".format(request))
 
     def onMessageFrame(self, payload):
-        if payload[0][0] == '\n'[0]:
-            self.factory.authenticate(self, payload[0])
-        else:
-            self.factory.broadcast_to_all(self, payload)
+        if payload[0].__len__() > 0:
+            if payload[0][0] == '\n'[0]:
+                self.factory.authenticate(self, payload[0])
+            else:
+                self.factory.broadcast_to_all(self, payload)
 
     def onFrameData(self, payload):
         print("Data: " + str(payload))
