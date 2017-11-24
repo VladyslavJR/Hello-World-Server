@@ -31,11 +31,10 @@ class ServerProtocol(WebSocketServerProtocol):
         print("Some request connected {}".format(request))
 
     def onFrameData(self, payload):
-        if payload.__len__() > 0:
-            if payload[0] == '\n'[0]:
-                self.factory.authenticate(self, payload)
-            else:
-                self.factory.broadcast_to_all(self, payload)
+        if payload[0] is '\n'[0]:
+            self.factory.authenticate(self, payload)
+        elif payload.__len__() < 3 or payload[2] is not '\n'[0]:
+            self.factory.broadcast_to_all(self, payload)
 
 
 class ChatFactory(WebSocketServerFactory):
@@ -52,6 +51,7 @@ class ChatFactory(WebSocketServerFactory):
         user_name = payload[1:]
         self.users[client.peer] = {"object": client, "user_name": user_name}
         print("User " + user_name + " has authenticated.")
+        self.broadcast_to_all(client, '', is_login=True)
 
     def unregister(self, client):
         if client.peer in self.users:
@@ -61,17 +61,23 @@ class ChatFactory(WebSocketServerFactory):
 
     def log_out(self, client):
         print("User " + self.users[client.peer]["user_name"] + " has loged out.")
+        self.broadcast_to_all(client, '', is_logout=True)
         self.users.pop(client.peer)
 
     def broadcast_history_to_client(self, client):
         for msg in self.messages:
             client.sendMessage(msg)
 
-    def broadcast_to_all(self, client, payload):
+    def broadcast_to_all(self, client, payload, is_logout=False, is_login=False):
         for c in self.clients:
             if c.peer in self.users:
                 if self.users[c.peer]["object"] is client:
-                    msg = '[' + self.users[c.peer]["user_name"] + '] ' + payload
+                    if is_logout:
+                        msg = 'User ' + self.users[c.peer]["user_name"] + ' is offline.'
+                    elif is_login:
+                        msg = 'User ' + self.users[c.peer]["user_name"] + ' has joined our chat.'
+                    else:
+                        msg = '[' + self.users[c.peer]["user_name"] + '] ' + payload
                     self.messages.append(msg)
                     break
         for c in self.clients:
