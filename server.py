@@ -13,7 +13,7 @@ from autobahn.twisted.resource import WebSocketResource
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-p', '--port', dest="PORT", default=8080, type=int)
+parser.add_argument('-p', '--port', dest="PORT", default=80, type=int)
 parser.add_argument('-l', '--local', dest="local", default=False, type=bool)
 
 args = parser.parse_args()
@@ -31,13 +31,11 @@ class ServerProtocol(WebSocketServerProtocol):
         print("Some request connected {}".format(request))
 
     def onFrameData(self, payload):
-        print("Data: [" + str(payload.__len__()) + "] " + str(payload))
-        for data in payload:
-            if data.__len__() > 0:
-                if data[0] == '\n'[0]:
-                    self.factory.authenticate(self, data)
-                else:
-                    self.factory.broadcast_to_all(self, data)
+        if payload.__len__() > 0:
+            if payload[0] == '\n'[0]:
+                self.factory.authenticate(self, payload)
+            else:
+                self.factory.broadcast_to_all(self, payload)
 
 
 class ChatFactory(WebSocketServerFactory):
@@ -73,9 +71,7 @@ class ChatFactory(WebSocketServerFactory):
         for c in self.clients:
             if c.peer in self.users:
                 if self.users[c.peer]["object"] is client:
-                    msg = str(payload)
-                    msg = msg[2:msg.__len__() - 2]
-                    msg = '[' + self.users[c.peer]["user_name"] + '] ' + msg
+                    msg = '[' + self.users[c.peer]["user_name"] + '] ' + payload
                     self.messages.append(msg)
                     break
         for c in self.clients:
