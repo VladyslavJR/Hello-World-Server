@@ -31,9 +31,9 @@ class ServerProtocol(WebSocketServerProtocol):
         print("Some request connected {}".format(request))
 
     def onFrameData(self, payload):
-        if payload.__len__() > 0:
-            if payload[0].__len__() > 0:
-                if payload[0][0] == '\n'[0]:
+        if payload.__len__() > 1:
+            if payload[1].__len__() > 0:
+                if payload[1][0] == '\n'[0]:
                     self.factory.authenticate(self, payload[0])
                 else:
                     self.factory.broadcast_to_all(self, payload)
