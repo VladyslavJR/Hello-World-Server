@@ -98,9 +98,9 @@ class ChatFactory(WebSocketServerFactory):
             for user in self.users:
                 if client is user.client:
                     if tag == 'logout':
-                        msg = 'User ' + user.user_name + ' is offline.'
+                        msg = 'Follower ' + user.user_name + ' has left our circle. Let The Saint Code be with him!'
                     elif tag == 'login':
-                        msg = 'User ' + user.user_name + ' has joined our chat.'
+                        msg = 'Follower ' + user.user_name + ' has joined our circle. Hail to The Saint Code!'
                     else:
                         msg = '[' + user.user_name + '] ' + payload
                     self.messages.append(msg)
