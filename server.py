@@ -24,7 +24,6 @@ args = parser.parse_args()
 class ServerProtocol(WebSocketServerProtocol):
     def onOpen(self):
         self.factory.register(self)
-        self.factory.broadcast_history_to_client(self)
 
     def connectionLost(self, reason):
         self.factory.unregister(self)
@@ -39,52 +38,68 @@ class ServerProtocol(WebSocketServerProtocol):
             self.factory.broadcast_to_all(self, payload)
 
 
+class User:
+    def __init__(self, client, user_name, id_number):
+        self.id = id_number
+        self.user_name = user_name
+        self.client = client
+
+
 class ChatFactory(WebSocketServerFactory):
     def __init__(self, *args, **kwargs):
         super(ChatFactory, self).__init__(*args, **kwargs)
         self.clients = []
         self.messages = []
-        self.users = {}
+        self.users = []
 
     def register(self, client):
         self.clients.append(client)
 
     def authenticate(self, client, payload):
         user_name = payload[1:]
-        self.users[client.peer] = {"object": client, "user_name": user_name}
-        print("User " + user_name + " has authenticated.")
-        self.broadcast_to_all(client, '', is_login=True)
+        name_taken = False
+        for user in self.users:
+            if user_name == user.user_name:
+                name_taken = True
+                break
+        if not name_taken:
+            self.users.append(User(client, user_name, self.users.__len__()))
+            print("User " + user_name + " has authenticated.")
+            self.broadcast_history_to_client(client)
+            self.broadcast_to_all(client, '', is_login=True)
+        else:
+            client.sendClose(code=1000, reason=u'Username already taken')
 
     def unregister(self, client):
-        if client.peer in self.users:
-            self.log_out(client)
+        for user in self.users:
+            if client is user.client:
+                self.log_out(user)
+                break
         if client in self.clients:
             self.clients.remove(client)
 
-    def log_out(self, client):
-        print("User " + self.users[client.peer]["user_name"] + " has loged out.")
-        self.broadcast_to_all(client, '', is_logout=True)
-        self.users.pop(client.peer)
+    def log_out(self, user):
+        print("User " + user.user_name + " has loged out.")
+        self.broadcast_to_all(user.client, '', is_logout=True)
+        self.users.remove(user)
 
     def broadcast_history_to_client(self, client):
         for msg in self.messages:
             client.sendMessage(msg)
 
     def broadcast_to_all(self, client, payload, is_logout=False, is_login=False):
-        for c in self.clients:
-            if c.peer in self.users:
-                if self.users[c.peer]["object"] is client:
-                    if is_logout:
-                        msg = 'User ' + self.users[c.peer]["user_name"] + ' is offline.'
-                    elif is_login:
-                        msg = 'User ' + self.users[c.peer]["user_name"] + ' has joined our chat.'
-                    else:
-                        msg = '[' + self.users[c.peer]["user_name"] + '] ' + payload
-                    self.messages.append(msg)
-                    break
-        for c in self.clients:
-            if c.peer in self.users:
-                self.users[c.peer]["object"].sendMessage(msg)
+        for user in self.users:
+            if client is user.client:
+                if is_logout:
+                    msg = 'User ' + user.user_name + ' is offline.'
+                elif is_login:
+                    msg = 'User ' + user.user_name + ' has joined our chat.'
+                else:
+                    msg = '[' + user.user_name + '] ' + payload
+                self.messages.append(msg)
+                break
+        for user in self.users:
+            user.client.sendMessage(msg)
 
 
 if __name__ == "__main__":
