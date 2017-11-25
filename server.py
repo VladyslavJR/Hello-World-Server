@@ -66,9 +66,10 @@ class ChatFactory(WebSocketServerFactory):
             self.users.append(User(client, user_name, self.users.__len__()))
             print("User " + user_name + " has authenticated.")
             self.broadcast_history_to_client(client)
-            self.broadcast_to_all(client, '', is_login=True)
+            self.broadcast_to_all(client, '', tag='login')
         else:
-            client.sendClose(code=1000, reason=u'Username already taken')
+            self.broadcast_to_all(client, user_name, tag='clone')
+            client.sendClose(code=1000, reason=u'You shall not pass!')
 
     def unregister(self, client):
         for user in self.users:
@@ -80,24 +81,30 @@ class ChatFactory(WebSocketServerFactory):
 
     def log_out(self, user):
         print("User " + user.user_name + " has loged out.")
-        self.broadcast_to_all(user.client, '', is_logout=True)
+        self.broadcast_to_all(user.client, '', tag='logout')
         self.users.remove(user)
 
     def broadcast_history_to_client(self, client):
         for msg in self.messages:
             client.sendMessage(msg)
 
-    def broadcast_to_all(self, client, payload, is_logout=False, is_login=False):
-        for user in self.users:
-            if client is user.client:
-                if is_logout:
-                    msg = 'User ' + user.user_name + ' is offline.'
-                elif is_login:
-                    msg = 'User ' + user.user_name + ' has joined our chat.'
-                else:
-                    msg = '[' + user.user_name + '] ' + payload
-                self.messages.append(msg)
-                break
+    def broadcast_to_all(self, client, payload, tag=''):
+        if tag == 'clone':
+            msg = 'Some unworthy being tried to impersonate ' + payload + ', but our Lord and Saviour ' \
+                                                                          'The Saint Code has protected ' \
+                                                                          'us from this menace. All hail ' \
+                                                                          'The Saint Code!'
+        else:
+            for user in self.users:
+                if client is user.client:
+                    if tag == 'logout':
+                        msg = 'User ' + user.user_name + ' is offline.'
+                    elif tag == 'login':
+                        msg = 'User ' + user.user_name + ' has joined our chat.'
+                    else:
+                        msg = '[' + user.user_name + '] ' + payload
+                    self.messages.append(msg)
+                    break
         for user in self.users:
             user.client.sendMessage(msg)
 
