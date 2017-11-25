@@ -10,6 +10,8 @@ from autobahn.twisted.websocket import WebSocketServerFactory, \
 
 from autobahn.twisted.resource import WebSocketResource
 
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 parser = argparse.ArgumentParser()
 
