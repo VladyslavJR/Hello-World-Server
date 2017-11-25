@@ -94,6 +94,7 @@ class ChatFactory(WebSocketServerFactory):
                                                                           'The Saint Code has protected ' \
                                                                           'us from this menace. All hail ' \
                                                                           'The Saint Code!'
+            self.messages.append(msg)
         else:
             for user in self.users:
                 if client is user.client:
