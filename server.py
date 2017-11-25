@@ -30,7 +30,7 @@ class ServerProtocol(WebSocketServerProtocol):
     def onConnect(self, request):
         print("Some request connected {}".format(request))
 
-    def onFrameData(self, payload):
+    def onMessage(self, payload, isBinary):
         if payload[0] is '\n'[0]:
             self.factory.authenticate(self, payload)
         elif payload.__len__() < 3 or payload[2] is not '\n'[0]:
