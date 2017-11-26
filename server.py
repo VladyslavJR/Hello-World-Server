@@ -68,8 +68,8 @@ class ChatFactory(WebSocketServerFactory):
             self.broadcast_history_to_client(client)
             self.broadcast_to_all(client, '', tag='login')
         else:
-            self.broadcast_to_all(client, user_name, tag='clone')
-            client.sendClose(code=1000, reason=u'You shall not pass!')
+            self.broadcast_to_all(client, user_name)
+            client.sendClose(code=1000, reason=u'Username already taken')
 
     def unregister(self, client):
         for user in self.users:
@@ -89,23 +89,16 @@ class ChatFactory(WebSocketServerFactory):
             client.sendMessage(msg)
 
     def broadcast_to_all(self, client, payload, tag=''):
-        if tag == 'clone':
-            msg = 'Some unworthy being tried to impersonate ' + payload + ', but our Lord and Saviour ' \
-                                                                          'The Saint Code has protected ' \
-                                                                          'us from this menace. All hail ' \
-                                                                          'The Saint Code!'
-            self.messages.append(msg)
-        else:
-            for user in self.users:
-                if client is user.client:
-                    if tag == 'logout':
-                        msg = 'Follower ' + user.user_name + ' has left our circle. Let The Saint Code be with him!'
-                    elif tag == 'login':
-                        msg = 'Follower ' + user.user_name + ' has joined our circle. Hail to The Saint Code!'
-                    else:
-                        msg = '[' + user.user_name + '] ' + payload
-                    self.messages.append(msg)
-                    break
+        for user in self.users:
+            if client is user.client:
+                if tag == 'logout':
+                    msg = 'User ' + user.user_name + ' has left our chat. Let The Saint Code be with him!'
+                elif tag == 'login':
+                    msg = 'User ' + user.user_name + ' has joined our chat'
+                else:
+                    msg = '[' + user.user_name + '] ' + payload
+                self.messages.append(msg)
+                break
         for user in self.users:
             user.client.sendMessage(msg)
 
