@@ -58,10 +58,11 @@ class ChatFactory(WebSocketServerFactory):
     def authenticate(self, client, payload):
         user_name = payload[1:]
         name_taken = False
-        for user in self.users:
-            if user_name == user.user_name:
-                name_taken = True
-                break
+        if user_name is not 'John Doe':
+            for user in self.users:
+                if user_name == user.user_name:
+                    name_taken = True
+                    break
         if not name_taken:
             self.users.append(User(client, user_name, self.users.__len__()))
             print("User " + user_name + " has authenticated.")
