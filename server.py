@@ -93,7 +93,7 @@ class ChatFactory(WebSocketServerFactory):
         for user in self.users:
             if client is user.client:
                 if tag == 'logout':
-                    msg = 'User ' + user.user_name + ' has left our chat. Let The Saint Code be with him!'
+                    msg = 'User ' + user.user_name + ' has left our chat.'
                 elif tag == 'login':
                     msg = 'User ' + user.user_name + ' has joined our chat'
                 else:
