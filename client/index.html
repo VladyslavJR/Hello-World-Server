@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hello World!</title>
+    <link rel="stylesheet" type="text/css" href="index.css">
+  </head>
+  <body>
+  	<div id="registration_form_holder" class="temp">
+  		<div class="registration_form">
+  			<div class="registration_form_element">
+  				<label for="name_input">Name</label>
+  				<input id="name_input" type="text" class="regform_input" autofocus required>
+  			</div>
+  			<div class="registration_form_element">
+  				<label for="password_input">Password</label>
+	  			<input id="password_input" type="text" class="regform_input">
+	  		</div>
+	  		<div class="empty_cell">
+	  			<label id="action_type_label" for="action_type_chkbx">Log In</label>
+	  			<input id="action_type_chkbx" type="checkbox" onchange="changeLabel()">
+	  		</div>
+	  		<div class="registration_form_button">
+  				<button id="creditentials_confirmation_btn" onclick="attempt_register()">Go!</button>
+  			</div>
+  		</div>
+  	</div>
+  	
+  	<div id="active_chat_area" hidden>
+    	<div id="chat_window"></div>
+
+    	<div id="msg_box">
+    		<input id="textbox" type="text">
+    		<button id="send_button">Send</button>
+    	</div>
+  	</div>
+
+    <!-- Load React. -->
+    <!-- Note: when deploying, replace "development.js" with "production.min.js". -->
+    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+	
+    <script type="text/javascript" src="chat_window.js"></script>
+
+  </body>
+</html>
