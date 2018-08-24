@@ -39,25 +39,36 @@ class ServerProtocol(WebSocketServerProtocol):
         self.factory.register_client(self)
 
     def connectionLost(self, reason):
-        self.factory.unregister_client(self)
+        if hasattr(self, 'user'):
+            self.factory.unregister_user_client(self.user)
+        else:
+            self.factory.unregister_client(self)
 
     def onConnect(self, request):
         print("Some request connected {}".format(request))
 
     def onMessage(self, payload, isBinary):
         if payload.__len__() > 0:
-            msg = json.loads(payload)
-            if msg["type"] == "message":
-                if msg["text"] in echo:
-                    self.factory.broadcast_to_all(self, msg, tag='echo')
-                else:
-                    self.factory.broadcast_to_all(self, msg)
-            elif msg["type"] == "authenticate":
-                msg["password"] = "1234"
-                self.factory.authenticate(self, msg)
-            elif msg["type"] == "register":
-                msg["password"] = "1234"
-                self.factory.register_user(self, msg)
+            try:
+                msg = json.loads(payload)
+                if msg["type"] == "message":
+                    if msg["text"] in echo:
+                        self.factory.broadcast_to_all(self.user, msg, tag='echo')
+                    else:
+                        self.factory.broadcast_to_all(self.user, msg)
+                elif msg["type"] == "authenticate":
+                    msg["password"] = "1234"
+                    self.factory.authenticate(self, msg)
+                elif msg["type"] == "register":
+                    msg["password"] = "1234"
+                    self.factory.register_user(self, msg)
+                elif msg["type"] == "pong":
+                    self.factory.send_pong(self)
+            except ValueError:
+                print(str(payload))
+
+    def assign_user(self, user):
+        self.user = user
                     
 
 
@@ -74,6 +85,9 @@ class User:
         self.client = client
         self.status = status
 
+    def sendMessage(self, msg):
+        self.client.sendMessage(msg)
+
     def __del__(self):
         if self.status == 'user':
             users.remove(self)
@@ -88,10 +102,12 @@ class ChatFactory(WebSocketServerFactory):
         self.messages = []
         self.online_users = []
         self.online_admins = []
-        self.online_anons = []
 
     def register_client(self, client):
         self.clients.append(client)
+
+    def unregister_client(self, client):
+        self.clients.remove(client)
 
     def register_user(self, client, payload):
         user_name = payload["name"]
@@ -118,7 +134,8 @@ class ChatFactory(WebSocketServerFactory):
             msg = {
                 "type": "register"
             }
-            client.sendMessage(json.dumps(msg))
+            client.assign_user(user)
+            user.sendMessage(json.dumps(msg))
         else:
             msg = {
                 "type":"regfailed",
@@ -163,60 +180,48 @@ class ChatFactory(WebSocketServerFactory):
             msg = {
                 "type":"authenticated"
             }
-            client.sendMessage(json.dumps(msg))
+            client.assign_user(user)
+            user.sendMessage(json.dumps(msg))
             if is_admin:
                 self.online_admins.append(user)
             else:
                 self.online_users.append(user)
             self.on_login(user)
         elif error_code == 0:
-            self.broadcast_to_all(client, user_name)
             msg = {
                 "type":"authfailed",
                 "reason":"nouser"
             }
             client.sendMessage(json.dumps(msg))
         elif error_code == 1:
-            self.broadcast_to_all(client, user_name)
             msg = {
                 "type":"authfailed",
                 "reason":"nameinuse"
             }
             client.sendMessage(json.dumps(msg))
         elif error_code == 2:
-            self.broadcast_to_all(client, user_name)
             msg = {
                 "type":"authfailed",
                 "reason":"invalidpassword"
             }
             client.sendMessage(json.dumps(msg))
         else:
-            self.broadcast_to_all(client, user_name)
             msg = {
                 "type":"authfailed",
                 "reason":"unknown"
             }
             client.sendMessage(json.dumps(msg))
 
-    def unregister_client(self, client):
-        user_found = False
-        for user in self.online_users:
-            if client is user.client:
-                self.log_out(user, status='user')
-                user_found = True
-                break
-        if not user_found:
-            for admin in self.online_admins:
-                user_found = True
-                if client is admin.client:
-                    self.log_out(admin, status='admin')
-                    break
-        if client in self.clients:
-            self.clients.remove(client)
+    def unregister_user_client(self, user):
+        if user in self.online_users:
+            self.log_out(user, status='user')
+        elif user in self.online_admins:
+            self.log_out(admin, status='admin')
+        self.unregister_client(user.client)
 
     def log_out(self, user, status):
         print("User " + user.user_name + " has logged out.")
-        self.broadcast_to_all(user.client, '', tag='logout')
+        self.broadcast_to_all(user, tag='logout')
         if status == 'user':
             self.online_users.remove(user)
         elif status == 'admin':
@@ -224,66 +229,61 @@ class ChatFactory(WebSocketServerFactory):
 
     def on_login(self, user):
         print("User " + user.user_name + " has authenticated.")
-        self.broadcast_history_to_client(user.client)
-        self.broadcast_to_all(user.client, '', tag='login')
+        self.broadcast_history_to_user(user)
+        self.broadcast_to_all(user, tag='login')
 
-    def broadcast_history_to_client(self, client):
+    def broadcast_history_to_user(self, user):
         for msg in self.messages:
-            client.sendMessage(msg)
+            user.sendMessage(msg)
 
-    def broadcast_to_all(self, client, payload, tag=''):
+    def send_pong(self, client):
+        pong = {
+            "type":"pong"
+        }
+
+        client.sendMessage(json.dumps(pong))
+
+    def broadcast_to_all(self, user, payload='', tag=''):
         msg = ''
         user_name = ""
         if tag == 'echo':
-            self.broadcast_to_all(client, payload)
+            self.broadcast_to_all(user, payload)
             for admin in self.online_admins:
                 if admin.user_name == 'Vlados':
                     msg = "...Portos..."
+        elif tag == 'server':
+            msg = payload['text']
+        elif tag == 'login':
+            msg = ('User ' if user in self.online_users else 'Admin ') + user.user_name + \
+                   ' has joined our chat'
+        elif tag == 'logout':
+            msg = ('User ' if user in self.online_users else 'Admin ') + user.user_name + \
+                   ' has joined our chat'
         else:
-            user_found = False
-            for user in self.online_users:
-                if client is user.client:
-                    user_found = True
-                    user_name = user.user_name
-                    if tag == 'logout':
-                        msg = 'User ' + user.user_name + ' has left our chat.'
-                    elif tag == 'login':
-                        msg = 'User ' + user.user_name + ' has joined our chat'
-                    else:
-                        msg = payload["text"]
-                    break
-            if not user_found:
-                for admin in self.online_admins:
-                    user_found = True
-                    user_name = admin.user_name
-                    if client is admin.client:
-                        if tag == 'logout':
-                            msg = 'Admin ' + admin.user_name + ' has left our chat.'
-                        elif tag == 'login':
-                            msg = 'Admin ' + admin.user_name + ' has joined our chat'
-                        else:
-                            msg = payload["text"]
-                        break
+            msg = payload["text"]
 
         if msg == "":
             return
 
         data = {
         "type":"message",
-        "name":user_name,
+        "name": user.user_name,
         "text":msg,
-        "date":str(datetime.now())
+        "date": str(datetime.now()) if type(payload) is str else payload['date']
         }
 
-        if data["name"] == "":
-            data["name"] = "Server"
+        if tag == 'server' or tag == 'login' or tag == 'logout':
+            data["name"] = "server"
 
         msg = json.dumps(data)
         self.messages.append(msg)
-        for user in self.online_users:
-            user.client.sendMessage(msg)
-        for admin in self.online_admins:
-            admin.client.sendMessage(msg)
+
+        for online_user in self.online_users:
+            if online_user is not user:
+                online_user.sendMessage(msg)
+        for online_admin in self.online_admins:
+            if online_admin is not admin:   
+                online_admin.sendMessage(msg)
 
 
 if __name__ == "__main__":
